@@ -1,0 +1,53 @@
+/* Import Comfortaa, Inter and Montserrat fonts */
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+@import "tailwindcss";
+
+/* Theme customisation */
+@theme {
+    --font-display: "Comfortaa", "serif";
+    --font-body: "Inter", "serif";
+
+    --color-button-background: var(--button-background);
+    --color-button-foreground: var(--button-foreground);
+    --color-alt-background-gradient: var(--alt-background-gradient);
+    --color-alt-background-plain: var(--alt-background-plain);
+    --color-background-main: var(--background-main);
+    --color-foreground-accent: var(--foreground-accent);
+    --color-foreground-main: var(--foreground-main);
+    --color-primary: var(--primary);
+}
+
+:root {
+    --button-background: #749752;
+    --button-foreground: #F5FFEB;
+    --alt-background-gradient: #CBFF98;
+    --alt-background-plain: #DFEBD2;
+    --background-main: #F4FFED;
+    --foreground-accent: #5E8545;
+    --foreground-main: #223218;
+    --primary: #48583E;
+}
+
+.dark {
+    --button-background: #749752;
+    --button-foreground: #F5FFEB;
+    --alt-background-gradient: #2b3a1c;
+    --alt-background-plain: #2d3128;
+    --background-main: #20221f;
+    --foreground-accent: #92d468;
+    --foreground-main: #ccf0b5;
+    --primary: #b3d69d;
+}
+
+body {
+    background-color: var(--background-main);
+    color: var(--foreground-main);
+    @apply font-body;
+}
+
+.mcjk { /* Custom "mcjk" logo font */
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 300;
+    font-style: italic;
+}

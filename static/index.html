@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="./assets/css/tailwind.css">
+
+    <script src="./assets/lib/anime.min.js"></script>
+
+    <script src="./assets/js/themes.js"></script>
+    <script src="./assets/js/sections.js"></script>
+</head>
+<body>
+    <nav id="navbar" class="fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-alt-background-gradient to-background-main/0 flex gap-12 px-8 pt-5 box-border text-2xl font-medium [&>*]:cursor-pointer [&>*]:hover:-translate-y-1 [&>*]:transition-all">
+        <span data-section="home" onclick="gotoSection(this.getAttribute('data-section'))" class="text-foreground-accent">Home</span>
+        <span data-section="shop" onclick="gotoSection(this.getAttribute('data-section'))">Shop</span>
+        <span data-section="community" onclick="gotoSection(this.getAttribute('data-section'))">Community</span>
+        <span>Account</span>
+    </nav>
+
+    <div class="mt-20"></div>
+
+    <section class="app-section mx-4" id="home">
+        <div class="bg-alt-background-plain w-sm h-40 flex flex-col justify-between p-4 rounded-xl">
+            <h3 class="text-3xl font-medium">Project O</h3>
+            <div class="flex ml-auto gap-6">
+                <button class="text-button-background underline cursor-pointer">Details</button>
+                <button class="bg-button-background text-button-foreground rounded-xl px-12 py-2 cursor-pointer">Play</button>
+            </div>
+        </div>
+        <section class="mt-6">
+            <h2 class="text-4xl">News feed</h2>
+            <div class="mt-4 flex gap-6">
+                <div class="bg-alt-background-plain w-lg h-48 flex flex-col justify-center gap-1 rounded-xl px-4 py-3 overflow-hidden">
+                    <h4 class="text-foreground-accent text-lg">Project O</h4>
+                    <h3 class="font-semibold text-2xl">2025 Season Update</h3>
+                    <p style="display: -webkit-box;-webkit-line-clamp: 4;-webkit-box-orient: vertical;" class="overflow-hidden text-ellipsis">Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis debitis fugit, aliquid voluptate deleniti autem ab asperiores voluptatem minima. Veritatis blanditiis labore et? Nostrum, iste voluptatem sunt possimus nulla delectus? Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nostrum repellat deleniti esse dolorum saepe doloremque. Laudantium delectus blanditiis vitae, repudiandae provident odio quibusdam vel at earum laborum, nisi ex officiis.</p>
+                </div>
+                <div class="bg-alt-background-plain w-lg h-48 flex flex-col justify-center gap-1 rounded-xl px-4 py-3 overflow-hidden">
+                    <h4 class="text-foreground-accent text-lg">Project O</h4>
+                    <h3 class="font-semibold text-2xl">2025 Season Update</h3>
+                    <p style="display: -webkit-box;-webkit-line-clamp: 4;-webkit-box-orient: vertical;" class="overflow-hidden text-ellipsis">Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis debitis fugit, aliquid voluptate deleniti autem ab asperiores voluptatem minima. Veritatis blanditiis labore et? Nostrum, iste voluptatem sunt possimus nulla delectus? Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nostrum repellat deleniti esse dolorum saepe doloremque. Laudantium delectus blanditiis vitae, repudiandae provident odio quibusdam vel at earum laborum, nisi ex officiis.</p>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <section class="app-section mx-4" id="shop">
+        <h1 class="font-semibold text-4xl mb-4">Coming soon!</h1>
+        <p>This part of the launcher is not finished yet. Stay tuned!</p>
+    </section>
+
+    <section class="app-section mx-4" id="community">
+        <p>Join the Discord server for Project O at .gg/myinvite</p>
+    </section>
+</body>
+</html>

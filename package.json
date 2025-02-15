@@ -1,0 +1,31 @@
+{
+  "name": "lux-launcher",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "concurrently --names \"TAILWIND,ELECTRON\" --prefix-colors \"cyan,yellow\" --kill-others \"npx @tailwindcss/cli -i ./static/assets/css/global.css -o ./static/assets/css/tailwind.css --watch\" \"electron .\"",
+    "build": "npx @tailwindcss/cli -i ./static/assets/css/global.css -o ./static/assets/css/tailwind.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaciejkaG/lux-launcher.git"
+  },
+  "author": "mcjk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MaciejkaG/lux-launcher/issues"
+  },
+  "homepage": "https://github.com/MaciejkaG/lux-launcher#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@tailwindcss/cli": "^4.0.6",
+    "electron": "^34.2.0",
+    "eslint": "^9.20.1",
+    "tailwindcss": "^4.0.6"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}
