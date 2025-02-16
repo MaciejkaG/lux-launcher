@@ -5,9 +5,9 @@ export default class APIClient {
         this.baseURL = config.baseURL || "";
     }
 
-    async fetchUserData(authToken) {
+    async _get(path, authToken = null) {
         try {
-            const response = await fetch(`${this.baseURL}/api/users/me`, {
+            const response = await fetch(this.baseURL + path, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -28,5 +28,13 @@ export default class APIClient {
             console.error("Failed to fetch user data:", error);
             throw error;
         }
+    }
+
+    async fetchUserData(authToken) {
+        return await this._get("/users/me", authToken);
+    }
+
+    async fetchUserFriends(authToken) {
+        return await this._get("/friends", authToken);
     }
 }

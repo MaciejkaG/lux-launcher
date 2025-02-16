@@ -57,3 +57,7 @@ body {
 span.icon-button {
     @apply select-none cursor-pointer p-1 rounded-lg transition-colors hover:bg-primary/10;
 }
+
+input.lux-input {
+    @apply p-2 rounded-lg border border-foreground-main/20 outline-none;
+}

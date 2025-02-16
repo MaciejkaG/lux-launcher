@@ -9,8 +9,10 @@
     <script src="./assets/lib/anime.min.js"></script>
 
     <script src="./assets/js/themes.js"></script>
+    <script src="./assets/js/modals.js"></script>
+    <script src="./assets/js/toasts.js"></script>
     <script src="./assets/js/sections.js"></script>
-    <script src="./assets/js/friends-list.js"></script>
+    <script src="./assets/js/friends-list-wrap.js"></script>
 </head>
 <body>
     <!-- Top navbar -->
@@ -19,44 +21,34 @@
         <span data-section="shop" onclick="gotoSection(this.getAttribute('data-section'))">Shop</span>
         <span data-section="community" onclick="gotoSection(this.getAttribute('data-section'))">Community</span>
         <span data-section="account" onclick="gotoSection(this.getAttribute('data-section'))">Account</span>
+        <span data-section="settings" onclick="gotoSection(this.getAttribute('data-section'))">Settings</span>
     </nav>
 
+    <!-- Collapsed friends menu -->
     <div id="friendslistwrap" class="hidden fixed right-4 px-4 top-4 w-sm h-12 justify-between items-center">
         <p class="opacity-60">
-            Friends online: <span class="font-bold">1</span><br>
-            Pending requests: <span class="font-bold">5</span>
+            Friends online: <span class="friends-online font-bold">1</span><br>
+            Pending requests: <span class="pending-friend-requests font-bold"></span>
         </p>
         <span class="material-symbols-outlined icon-button" onclick="toggleFriendsList()">expand_content</span>
     </div>
 
     <!-- Friends menu -->
-    <section id="friendslist" class="fixed z-50 bottom-4 right-4 top-20 w-sm bg-alt-background-plain rounded-xl shadow-xl p-4 flex flex-col gap-4">
+    <section id="friendslist" class="fixed z-40 bottom-4 right-4 top-20 w-sm bg-alt-background-plain rounded-xl shadow-xl border border-foreground-main/20 p-4 flex flex-col gap-4">
         <h2 class="text-3xl font-medium flex justify-between items-center">Friends <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined icon-button">add</span>
+            <span class="material-symbols-outlined icon-button" onclick="addFriends()">add</span>
             <span class="material-symbols-outlined icon-button" onclick="toggleFriendsList()">collapse_content</span>
         </div></h2>
 
         <div class="bg-button-background rounded-xl py-2 px-4 flex justify-between items-center cursor-pointer">
             <span class="text-button-foreground text-lg text-right">Pending friend requests</span>
-            <span class="bg-primary text-alt-background-plain h-10 w-10 flex justify-center items-center text-center text-xl font-bold rounded-full">5</span>
+            <span class="pending-friend-requests bg-primary text-alt-background-plain h-10 w-10 flex justify-center items-center text-center text-xl font-bold rounded-full"></span>
         </div>
 
         <div class="flex flex-col gap-4">
-            <div class="py-2 px-3 flex justify-between">
-                <span>MaciejkaG</span>
-                <span class="text-foreground-accent">Playing Project O</span>
-            </div>
-            <div class="py-2 px-3 flex justify-between">
-                <span>Player 3</span>
-                <span class="text-foreground-accent">In Lux</span>
-            </div>
-            <div class="py-2 px-3 flex justify-between opacity-40">
-                <span>Maciej 2</span>
-                <span class="text-foreground-accent">Offline</span>
-            </div>
-
         </div>
     </section>
+    <script src="./assets/js/services/friends.js"></script>
 
     <!-- Navbar-body separator -->
     <div class="mt-20"></div>
@@ -97,6 +89,14 @@
     </section>
 
     <section class="app-section mx-4" id="account">
+        <p>
+            Your username: <span id="username"></span><br>
+            Your display name: <span id="displayname"></span>
+        </p>
+    </section>
+    <script src="./assets/js/services/account.js"></script>
+
+    <section class="app-section mx-4" id="settings">
         <p>
             Your username: <span id="username"></span><br>
             Your display name: <span id="displayname"></span>
