@@ -1,5 +1,7 @@
 /* Import Comfortaa, Inter and Montserrat fonts */
 @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+/* Import Material Icons */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
 @import "tailwindcss";
 
@@ -50,4 +52,8 @@ body {
     font-family: 'Montserrat', sans-serif;
     font-weight: 300;
     font-style: italic;
+}
+
+span.icon-button {
+    @apply select-none cursor-pointer p-1 rounded-lg transition-colors hover:bg-primary/10;
 }

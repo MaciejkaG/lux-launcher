@@ -42,7 +42,6 @@ function gotoSection(sectionId) {
 }
 
 function _hideAllSections() {
-    console.log(sections)
     sections.forEach((section) => {
         section.style.display = "none";
     });

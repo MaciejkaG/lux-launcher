@@ -10,17 +10,58 @@
 
     <script src="./assets/js/themes.js"></script>
     <script src="./assets/js/sections.js"></script>
+    <script src="./assets/js/friends-list.js"></script>
 </head>
 <body>
-    <nav id="navbar" class="fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-alt-background-gradient to-background-main/0 flex gap-12 px-8 pt-5 box-border text-2xl font-medium [&>*]:cursor-pointer [&>*]:hover:-translate-y-1 [&>*]:transition-all">
+    <!-- Top navbar -->
+    <nav id="navbar" class="fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-alt-background-gradient to-background-main/0 flex gap-12 px-8 pt-5 text-2xl font-medium [&>*]:cursor-pointer [&>*]:hover:-translate-y-1 [&>*]:transition-all">
         <span data-section="home" onclick="gotoSection(this.getAttribute('data-section'))" class="text-foreground-accent">Home</span>
         <span data-section="shop" onclick="gotoSection(this.getAttribute('data-section'))">Shop</span>
         <span data-section="community" onclick="gotoSection(this.getAttribute('data-section'))">Community</span>
-        <span>Account</span>
+        <span data-section="account" onclick="gotoSection(this.getAttribute('data-section'))">Account</span>
     </nav>
 
+    <div id="friendslistwrap" class="hidden fixed right-4 px-4 top-4 w-sm h-12 justify-between items-center">
+        <p class="opacity-60">
+            Friends online: <span class="font-bold">1</span><br>
+            Pending requests: <span class="font-bold">5</span>
+        </p>
+        <span class="material-symbols-outlined icon-button" onclick="toggleFriendsList()">expand_content</span>
+    </div>
+
+    <!-- Friends menu -->
+    <section id="friendslist" class="fixed z-50 bottom-4 right-4 top-20 w-sm bg-alt-background-plain rounded-xl shadow-xl p-4 flex flex-col gap-4">
+        <h2 class="text-3xl font-medium flex justify-between items-center">Friends <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined icon-button">add</span>
+            <span class="material-symbols-outlined icon-button" onclick="toggleFriendsList()">collapse_content</span>
+        </div></h2>
+
+        <div class="bg-button-background rounded-xl py-2 px-4 flex justify-between items-center cursor-pointer">
+            <span class="text-button-foreground text-lg text-right">Pending friend requests</span>
+            <span class="bg-primary text-alt-background-plain h-10 w-10 flex justify-center items-center text-center text-xl font-bold rounded-full">5</span>
+        </div>
+
+        <div class="flex flex-col gap-4">
+            <div class="py-2 px-3 flex justify-between">
+                <span>MaciejkaG</span>
+                <span class="text-foreground-accent">Playing Project O</span>
+            </div>
+            <div class="py-2 px-3 flex justify-between">
+                <span>Player 3</span>
+                <span class="text-foreground-accent">In Lux</span>
+            </div>
+            <div class="py-2 px-3 flex justify-between opacity-40">
+                <span>Maciej 2</span>
+                <span class="text-foreground-accent">Offline</span>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Navbar-body separator -->
     <div class="mt-20"></div>
 
+    <!-- Body content -->
     <section class="app-section mx-4" id="home">
         <div class="bg-alt-background-plain w-sm h-40 flex flex-col justify-between p-4 rounded-xl">
             <h3 class="text-3xl font-medium">Project O</h3>
@@ -47,12 +88,20 @@
     </section>
 
     <section class="app-section mx-4" id="shop">
-        <h1 class="font-semibold text-4xl mb-4">Coming soon!</h1>
+        <h2 class="font-semibold text-4xl mb-4">Coming soon!</h2>
         <p>This part of the launcher is not finished yet. Stay tuned!</p>
     </section>
 
     <section class="app-section mx-4" id="community">
         <p>Join the Discord server for Project O at .gg/myinvite</p>
     </section>
+
+    <section class="app-section mx-4" id="account">
+        <p>
+            Your username: <span id="username"></span><br>
+            Your display name: <span id="displayname"></span>
+        </p>
+    </section>
+    <script src="./assets/js/services/account.js"></script>
 </body>
 </html>

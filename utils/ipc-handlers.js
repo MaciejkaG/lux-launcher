@@ -2,12 +2,26 @@ import { ipcMain, BrowserWindow } from "electron";
 
 import TMan from "./tman.js";
 
+import APIClient from "./api-client.js";
+
+const api = new APIClient({
+    baseURL: process.env.API_URL,
+});
+
 export default (mainWindow) => {
     ipcMain.handle("start-auth", async () => {
-        if (await TMan.loadToken()) { // If token is already there.
+        let token = await TMan.loadToken();
+        if (token) { // If token is already there.
             // TODO: Check if token is valid through an API call
-            mainWindow.loadFile("./static/index.html");
-            return;
+            try {
+                const userData = await api.fetchUserData(token);
+
+                mainWindow.loadFile("./static/index.html");
+                return;
+            } catch (error) {
+                console.error("Failed to verify token:", error);
+                TMan.clearToken();
+            }
         }
 
         const win = new BrowserWindow({
@@ -27,12 +41,21 @@ export default (mainWindow) => {
                 event.preventDefault(); // Prevent the navigation to example.com
                 win.close();
 
-                url = new URL("http://localhost:22277/?token=mytoken");
-                const token = url.searchParams.get("token");
+                url = new URL(url);
+                token = url.searchParams.get("token");
                 TMan.saveToken(token);
 
                 mainWindow.loadFile("./static/index.html");
             }
         });
+    });
+
+    ipcMain.handle("get-users-me", async () => {
+        const token = await TMan.loadToken();
+        if (!token) {
+            throw new Error("No token found");
+        }
+
+        return await api.fetchUserData(token);
     });
 };

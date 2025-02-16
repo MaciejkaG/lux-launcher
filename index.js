@@ -15,7 +15,6 @@ const WIN_HEIGHT = 800;
 
 // modify your existing createWindow() function
 const mainWindow = () => {
-    console.log(app.getPath('userData'))
     const mainWindow = new BrowserWindow({
         minWidth: WIN_WIDTH,
         minHeight: WIN_HEIGHT,
