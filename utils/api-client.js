@@ -25,7 +25,37 @@ export default class APIClient {
 
             return await response.json();
         } catch (error) {
-            console.error("Failed to fetch user data:", error);
+            console.error("GET request failed:", error);
+            throw error;
+        }
+    }
+
+    async _post(path, authToken = null, payload = {}) {
+        console.log(payload);
+        try {
+            const response = await fetch(this.baseURL + path, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(authToken && {
+                        Authorization: `Bearer ${authToken}`,
+                    }),
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `API Error: ${response.status} ${response.statusText}`,
+                    {
+                        status: response.status,
+                    }
+                );
+            }
+
+            return await response.text();
+        } catch (error) {
+            console.error("POST request failed:", error);
             throw error;
         }
     }
@@ -36,5 +66,17 @@ export default class APIClient {
 
     async fetchUserFriends(authToken) {
         return await this._get("/friends", authToken);
+    }
+
+    async addFriend(authToken, friendUsername) {
+        return await this._post("/friends/add", authToken, {
+            friend_username: friendUsername,
+        });
+    }
+
+    async removeFriend(authToken, friendPubId) {
+        return await this._post("/friends/remove", authToken, {
+            friend_public_id: friendPubId,
+        });
     }
 }

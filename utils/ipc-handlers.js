@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from "electron";
+import { ipcMain, BrowserWindow, dialog } from "electron";
 
 import TMan from "./tman.js";
 
@@ -27,11 +27,16 @@ export default (mainWindow) => {
                 wsc.connect();
                 return;
             } catch (error) {
+                if (error.code === "ECONNREFUSED") {
+                    dialog.showErrorBox("Connection error", "Couldn't connect to Lux servers. Please check your internet connection status and try again later.");
+                    return;
+                }
                 console.error("Failed to verify token:", error);
                 TMan.clearToken();
             }
         }
 
+        // Open login window
         const win = new BrowserWindow({
             width: 650,
             height: 900,
@@ -63,7 +68,21 @@ export default (mainWindow) => {
     const requireToken = async () => {
         const token = await TMan.loadToken();
         if (!token) {
-            throw new Error("No token found");
+            mainWindow.loadFile("./static/landing.html");
+            console.error("No token found");
+        }
+
+        try {
+            // Try to fetch user's profile (if it fails, the token is invalid)
+            await api.fetchUserData(token);
+        } catch (error) {
+            if (error?.status === 401) {
+                TMan.clearToken();
+                mainWindow.loadFile("./static/landing.html");
+                console.error("Token expired: ", error);
+            }
+
+            throw error;
         }
 
         return token;
@@ -87,6 +106,19 @@ export default (mainWindow) => {
         return wsc.getPresence();
     });
 
+    ipcMain.handle("add-friend", async (event, username) => {
+        const token = await requireToken();
+
+        return await api.addFriend(token, username);
+    });
+
+    ipcMain.handle("remove-friend", async (event, pubId) => {
+        const token = await requireToken();
+
+        return await api.removeFriend(token, pubId);
+    });
+
+    // WebSocket events handling
     wsc.on("friend_request", (friend) => {
         mainWindow.webContents.send("ws-friend_request", friend);
     });

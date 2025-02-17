@@ -178,5 +178,8 @@ class LuxToast {
 
 // Example Usage
 function showToast() {
-    
+    new LuxToast({
+        title: "Hi",
+        content: "Im a test toast!"
+    });
 }

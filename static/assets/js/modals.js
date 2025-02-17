@@ -5,12 +5,14 @@ class LuxModal {
         buttons = [],
         onClose = null,
         dismissible = true,
+        width = "w-sm",
     }) {
         this._title = title;
         this._content = content;
         this.buttons = buttons;
         this.onClose = onClose;
         this.dismissible = dismissible;
+        this.width = width;
         this.render();
         this.animateIn();
     }
@@ -40,7 +42,8 @@ class LuxModal {
         this.modal.className = `fixed inset-0 bg-black/40 backdrop-blur flex items-center justify-center z-50`;
 
         const modalContent = document.createElement("div");
-        modalContent.className = `bg-alt-background-plain p-6 rounded-2xl shadow-lg w-sm relative border border-foreground-main/20`;
+        modalContent.className = `bg-alt-background-plain p-6 rounded-2xl shadow-lg ${this.width} relative border border-foreground-main/20`;
+        console.log(modalContent.className);
         this.modalContent = modalContent;
 
         if (this.dismissible) {

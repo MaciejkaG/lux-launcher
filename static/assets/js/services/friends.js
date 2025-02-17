@@ -2,7 +2,7 @@ function addFriends() {
     new LuxModal({
         title: "Add Friend",
         content:
-            '<input type="text" placeholder="Enter username..." class="w-full lux-input">',
+            '<input type="text" id="add-friend-modal-input" placeholder="Enter username..." class="w-full lux-input">',
         buttons: [
             {
                 text: "Cancel",
@@ -13,141 +13,178 @@ function addFriends() {
             {
                 text: "Send Request",
                 class: "bg-blue-600/60 text-white",
-                action: function () {
-                    console.log("Friend request sent");
-                    this.title = "Friend request sent!";
+                action: async function () {
+                    const nickname = document.getElementById("add-friend-modal-input").value;
+                    await window.electron.friends.add(nickname);
+                    this.close();
+                    new LuxToast({
+                        title: `Friend request sent to ${nickname}`,
+                    });
                 },
             },
         ],
     });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const friendsListWrap = document.querySelector("#friendslistwrap");
-    const friendsOnlineCount = document.querySelector(".friends-online");
-    const pendingFriendRequestsCounters = document.querySelectorAll(
-        ".pending-friend-requests"
+let friendRequests;
+let friendsList = [];
+let currentFriendRequestCount = 0;
+
+const friendsListWrap = document.querySelector("#friendslistwrap");
+const friendsOnlineCount = document.querySelector(".friends-online");
+const pendingFriendRequestsCounters = document.querySelectorAll(
+    ".pending-friend-requests"
+);
+const friendsListContainer = document.querySelector(
+    "#friendslist .flex.flex-col.gap-4"
+);
+
+const updateFriendRequestCount = (val) => {
+    if (typeof val === "number") currentFriendRequestCount = val;
+    pendingFriendRequestsCounters.forEach((counter) => {
+        counter.textContent = val;
+    });
+};
+
+async function fetchFriendsList() {
+    const response = await window.electron.friends.list();
+    friendsList = response.friendsList;
+    friendRequests = response.friendRequests;
+    updateFriendRequestCount(response.friendRequests.length || "0");
+    updateFriendsDisplay();
+}
+
+async function fetchFriendsStatuses() {
+    if (friendsList.length === 0) return;
+    const statuses = await window.electron.friends.statuses();
+    updateFriendsDisplay(statuses);
+}
+
+function updateFriendsDisplay(statuses = {}) {
+    const onlineFriends = friendsList.filter(
+        (friend) => statuses[friend.public_id]?.online
     );
-    let currentFriendRequestCount = 0;
-    const updateFriendRequestCount = (val) => {
-        if (typeof val === "number") currentFriendRequestCount = val;
+    friendsOnlineCount.textContent = onlineFriends.length;
 
-        pendingFriendRequestsCounters.forEach(counter => {
-            counter.textContent = val;
-        });
-    };
-    const friendsListContainer = document.querySelector(
-        "#friendslist .flex.flex-col.gap-4"
-    );
-
-    let friendsList = []; // Store the friends list locally
-
-    async function fetchFriendsList() {
-        const response = await window.electron.friends.list();
-        friendsList = response.friendsList; // Cache the friends list locally
-        updateFriendRequestCount(response.friendRequests.length || "0");
-        updateFriendsDisplay();
-    }
-
-    async function fetchFriendsStatuses() {
-        if (friendsList.length === 0) return; // Skip if there are no friends
-        const statuses = await window.electron.friends.statuses();
-        console.log(statuses);
-        updateFriendsDisplay(statuses);
-    }
-
-    function updateFriendsDisplay(statuses = {}) {
-        // Count online friends
-        const onlineFriends = friendsList.filter(
-            (friend) => statuses[friend.public_id]?.online
-        );
-        friendsOnlineCount.textContent = onlineFriends.length;
-
-        // Clear and repopulate friends list
-        friendsListContainer.innerHTML = "";
-        friendsList.forEach((friend) => {
-            const status = statuses[friend.public_id] || {
-                online: false,
-                status: "Offline",
-            };
-            const statusText = status.online
-                ? translateStatus(status.status)
-                : "Offline";
-            const opacityClass = status.online ? "" : "opacity-40";
-
-            const friendElement = document.createElement("div");
-            friendElement.className = `py-2 px-3 flex justify-between ${opacityClass}`;
-            friendElement.innerHTML = `
-                <span>${friend.display_name}</span>
-                <span class="text-foreground-accent">${statusText}</span>
-            `;
-
-            friendsListContainer.appendChild(friendElement);
-        });
-
-        // Show/hide the friends list UI based on data presence
-        // friendsListWrap.classList.toggle(
-        //     "hidden",
-        //     friendsList.length === 0 &&
-        //         pendingFriendRequestsCount.textContent === "0"
-        // );
-    }
-
-    function translateStatus(statusKey) {
-        const statusDict = {
-            "projecto-playing": "Project O: Playing",
-            lux: "In Lux",
-            "": "Online",
+    friendsListContainer.innerHTML = "";
+    friendsList.forEach((friend) => {
+        const status = statuses[friend.public_id] || {
+            online: false,
+            status: "Offline",
         };
-        return statusDict[statusKey] || statusKey;
-    }
+        const statusText = status.online
+            ? translateStatus(status.status)
+            : "Offline";
+        const opacityClass = status.online ? "" : "opacity-40";
 
-    window.electron.on("ws-friend_request", (event, friend) => {
-        new LuxToast({
-            title: "New friend request!",
-            content: `${friend.display_name} just invited you to become friends.`,
-            duration: 5000,
-            buttons: [
-                {
-                    text: "Decline",
-                    class: "bg-red-600/60 text-white",
-                    action: function () {
-                        // window.electron.friends.respond(
-                        //     friend.public_id,
-                        //     false
-                        // );
-                        this.close();
-                        updateFriendRequestCount(currentFriendRequestCount - 1);
-                    },
-                },
-                {
-                    text: "Accept",
-                    class: "bg-blue-600/60 text-white",
-                    action: function () {
-                        console.log("accepted");
-                        // window.electron.friends.respond(friend.public_id, true);
-                        this.close();
-                        updateFriendRequestCount(currentFriendRequestCount - 1);
-                    },
-                },
-            ],
-        });
+        const friendElement = document.createElement("div");
+        friendElement.className = `py-2 px-3 flex justify-between ${opacityClass}`;
+        friendElement.innerHTML = `
+            <span>${friend.display_name}</span>
+            <span class="text-foreground-accent">${statusText}</span>
+        `;
+        friendsListContainer.appendChild(friendElement);
+    });
+}
 
-        // Increase pending requests count without fetching list
-        updateFriendRequestCount(currentFriendRequestCount + 1);
-        friendsListWrap.classList.remove("hidden"); // Show UI if a request comes in
+function translateStatus(statusKey) {
+    const statusDict = {
+        "projecto-playing": "Project O: Playing",
+        lux: "In Lux",
+        "": "Online",
+    };
+    return statusDict[statusKey] || statusKey;
+}
+
+function handleFriendRequest(event, friend) {
+    friendRequests.push({ ...friend, incoming: 1 });
+
+    new LuxToast({
+        title: "New friend request!",
+        content: `${friend.display_name} just invited you to become friends.`,
+        duration: 5000,
+        buttons: [
+            {
+                text: "Decline",
+                class: "bg-red-600/60 text-white",
+                action: function () {
+                    this.close();
+                    updateFriendRequestCount(currentFriendRequestCount - 1);
+                },
+            },
+            {
+                text: "Accept",
+                class: "bg-blue-600/60 text-white",
+                action: function () {
+                    this.close();
+                    updateFriendRequestCount(currentFriendRequestCount - 1);
+                },
+            },
+        ],
     });
 
-    // Initial fetch
+    updateFriendRequestCount(currentFriendRequestCount + 1);
+    friendsListWrap.classList.remove("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    window.electron.on("ws-friend_request", handleFriendRequest);
+
     await fetchFriendsList();
     await fetchFriendsStatuses();
 
-    // Set intervals for polling
-    setInterval(fetchFriendsList, 30000); // Fetch full friends list every 30s
-    setInterval(fetchFriendsStatuses, 1000); // Fetch statuses every 3s
+    setInterval(fetchFriendsList, 30000);
+    setInterval(fetchFriendsStatuses, 1000);
 });
 
+let friendRequestsModal;
+const updateFriendRequests = () => {
+    if (friendRequestsModal) {
+        let friendRequestsHTML = "<div class=\"flex flex-col gap-2 h-64 overflow-scroll\">";
+        friendRequests = friendRequests.sort((a, b) => b.incoming - a.incoming);
+        friendRequests.forEach(friend => {
+            friendRequestsHTML += `
+                <div class="py-2 px-3 flex justify-between items-center">
+                    <p>
+                        ${friend.display_name}<br>
+                        <span class="text-xs">${
+                            friend.incoming ? "Incoming" : "Outgoing"
+                        }</span>
+                    </p>
+                    <span class="flex gap-2">
+                        ${friend.incoming ? `<span onclick="addFriend('${friend.user_name}')" class="material-symbols-outlined icon-button">check</span>` : ""}
+                        <span onclick="revokeFriendRequest('${friend.public_id}')" class="material-symbols-outlined icon-button">close</span>
+                    </span>
+                </div>
+            `;
+        });
+        friendRequestsHTML += "</div>";
 
-// async function updateFriendsList() {
-//     const { friends }
-// }
+        friendRequestsModal.content = friendRequestsHTML;
+    }
+};
+
+function openFriendRequests() {
+    friendRequestsModal = new LuxModal({
+        width: "w-lg",
+        title: "Friend requests",
+        content: "",
+    });
+
+    // TODO: Add friend requests here
+    updateFriendRequests();
+}
+
+async function addFriend(username) {
+    await window.electron.friends.add(username);
+    friendRequests = friendRequests.filter((x) => x.user_name !== username);
+    await fetchFriendsList();
+    updateFriendRequests();
+}
+
+async function revokeFriendRequest(publicId) {
+    await window.electron.friends.remove(publicId);
+    friendRequests = friendRequests.filter((x) => x.public_id !== x.public_id);
+    await fetchFriendsList();
+    updateFriendRequests();
+}

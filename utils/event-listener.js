@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import { ipcMain } from "electron";
+import { ipcMain, dialog } from "electron";
 import EventEmitter from "eventemitter3";
 
 export default class WebSocketClient extends EventEmitter {
@@ -41,13 +41,46 @@ export default class WebSocketClient extends EventEmitter {
             }
         });
 
-        this.ws.on("close", () => {
-            console.log("WebSocket disconnected. Attempting to reconnect...");
-            this.ws = null;
-            setTimeout(() => this.connect(), this.reconnectInterval);
+        this.ws.on("close", (code, reason) => {
+            switch (code) {
+                case -1:
+                    dialog.showErrorBox(
+                        "WebSocket error",
+                        "WebSocket server terminated the connection. Reason:\n\n" + reason
+                    );
+                    break;
+                
+                case 3000:
+                    dialog.showErrorBox(
+                        "WebSocket error",
+                        "WebSocket server terminated the connection. Reason:\n\n" +
+                            reason
+                    );
+                    break;
+            
+                default:
+                    console.log(
+                        "WebSocket disconnected. Attempting to reconnect..."
+                    );
+                    this.ws = null;
+                    setTimeout(() => this.connect(), this.reconnectInterval);
+                    break;
+            }
         });
 
         this.ws.on("error", (err) => {
+            if (err.code === "ECONNREFUSED") {
+                dialog.showErrorBox(
+                    "WebSocket connection error",
+                    "Couldn't connect to Lux servers, please try again later."
+                );
+            } else {
+                dialog.showErrorBox(
+                    "WebSocket error",
+                    "WebSocket error occured:\n\n" + err
+                );
+            }
+
             console.error("WebSocket error:", err);
         });
     }
