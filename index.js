@@ -10,8 +10,8 @@ import packageData from "./package.json" with { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const WIN_WIDTH = 1400;
-const WIN_HEIGHT = 800;
+const WIN_WIDTH = 1200;
+const WIN_HEIGHT = 700;
 
 // modify your existing createWindow() function
 const mainWindow = () => {
