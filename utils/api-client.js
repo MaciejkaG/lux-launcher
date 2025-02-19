@@ -31,7 +31,6 @@ export default class APIClient {
     }
 
     async _post(path, authToken = null, payload = {}) {
-        console.log(payload);
         try {
             const response = await fetch(this.baseURL + path, {
                 method: "POST",

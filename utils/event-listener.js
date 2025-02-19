@@ -20,8 +20,6 @@ export default class WebSocketClient extends EventEmitter {
     connect() {
         if (this.ws) return;
 
-        console.log(this.authToken);
-
         this.ws = new WebSocket(process.env.API_WEBSOCKET, {
             headers: {
                 Authorization: `Bearer ${this.authToken}`,

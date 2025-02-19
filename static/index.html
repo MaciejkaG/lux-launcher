@@ -36,11 +36,11 @@
     <!-- Friends menu -->
     <section id="friendslist" class="fixed z-40 bottom-4 right-4 top-20 w-sm bg-alt-background-plain rounded-xl shadow-xl border border-foreground-main/20 p-4 flex flex-col gap-4">
         <h2 class="text-3xl font-medium flex justify-between items-center">Friends <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined icon-button" onclick="addFriends()">add</span>
+            <span class="material-symbols-outlined icon-button" onclick="window.addFriends()">add</span>
             <span class="material-symbols-outlined icon-button" onclick="toggleFriendsList()">collapse_content</span>
         </div></h2>
 
-        <div onclick="openFriendRequests()" class="bg-button-background rounded-xl py-2 px-4 flex justify-between items-center cursor-pointer">
+        <div onclick="window.openFriendRequests()" class="bg-button-background rounded-xl py-2 px-4 flex justify-between items-center cursor-pointer">
             <span class="text-button-foreground text-lg text-right">Pending friend requests</span>
             <span class="pending-friend-requests bg-primary text-alt-background-plain h-10 w-10 flex justify-center items-center text-center text-xl font-bold rounded-full"></span>
         </div>
