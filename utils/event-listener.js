@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import { ipcMain, dialog } from "electron";
+import { dialog } from "electron";
 import EventEmitter from "eventemitter3";
 
 export default class WebSocketClient extends EventEmitter {
