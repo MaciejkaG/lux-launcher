@@ -945,6 +945,11 @@
     --tw-ease: linear;
     transition-timing-function: linear;
   }
+  .\[\&\:\:-webkit-scrollbar\]\:hidden {
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
   .\[\&\>\*\]\:cursor-pointer {
     &>* {
       cursor: pointer;

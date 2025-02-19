@@ -1,5 +1,12 @@
 import fetch from "node-fetch";
 
+class ApiError extends Error {
+    constructor(status, statusText) {
+        super(`API Error: ${status} ${statusText}`);
+        this.status = status;
+    }
+}
+
 export default class APIClient {
     constructor(config) {
         this.baseURL = config.baseURL || "";
@@ -18,9 +25,7 @@ export default class APIClient {
             });
 
             if (!response.ok) {
-                throw new Error(
-                    `API Error: ${response.status} ${response.statusText}`
-                );
+                throw new ApiError(response.status, response.statusText);
             }
 
             return await response.json();
@@ -44,12 +49,7 @@ export default class APIClient {
             });
 
             if (!response.ok) {
-                throw new Error(
-                    `API Error: ${response.status} ${response.statusText}`,
-                    {
-                        status: response.status,
-                    }
-                );
+                throw new ApiError(response.status, response.statusText);
             }
 
             return await response.text();
