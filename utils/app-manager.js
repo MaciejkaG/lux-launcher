@@ -12,12 +12,32 @@ import AppIPCServer from "./app-ipc-server.js";
 
 const platformString = `${platform()}-${arch()}`;
 
+let baseInstallDir;
+switch (platform()) {
+    case "win32":
+        baseInstallDir = path.join("C:", "Program Files", "Lux");
+        break;
+
+    case "darwin":
+        baseInstallDir = "~/Library/Application Support/Steam";
+        break;
+
+    default:
+        throw new Error(
+            "Unsupported platform detected. Couldn't initialise the Game Library Manager."
+        );
+}
+
+fs.stat(baseInstallDir).catch(() => {
+    fs.mkdir(baseInstallDir, { recursive: true });
+});
+
 const AppIPC = new AppIPCServer();
 
 export default class AppManager {
-    constructor(libraryApiUrl, installDir) {
+    constructor(libraryApiUrl) {
         this.libraryApiUrl = libraryApiUrl;
-        this.installDir = installDir;
+        this.installDir = baseInstallDir;
         this.installedGamesFile = path.join(
             this.installDir,
             "installed_games.json"
@@ -25,32 +45,42 @@ export default class AppManager {
         this.ipcServers = new Map();
     }
 
-    async fetchGameLibrary() {
-        const response = await fetch(`${this.libraryApiUrl}/api/apps`);
+    async fetchGameLibrary(authToken) {
+        const response = await fetch(`${this.libraryApiUrl}/apps`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${authToken}`,
+            },
+        });
         if (!response.ok) throw new Error("Failed to fetch game library");
         const responseJSON = await response.json();
         return responseJSON;
     }
 
-    async fetchGameDetails(uid) {
-        const response = await fetch(`${this.libraryApiUrl}/api/apps/${uid}`);
+    async fetchGameDetails(uid, authToken) {
+        const response = await fetch(`${this.libraryApiUrl}/apps/${uid}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${authToken}`,
+            },
+        });
         if (!response.ok)
             throw new Error(`Failed to fetch details for game ${uid}`);
         return response.json();
     }
 
-    async listGames() {
-        const library = await this.fetchGameLibrary();
+    async listApps(authToken) {
+        const library = await this.fetchGameLibrary(authToken);
         const installedGames = await this.getInstalledGames();
 
         return library.map((game) => ({
-            name: game.name,
-            appid: game.uid,
+            name: game.display_name,
+            appId: game.app_id,
             isInstalled: !!installedGames[game.uid],
         }));
     }
 
-    async installGame(
+    async install(
         uid,
         installPath = this.installDir,
         onProgress = () => {}
@@ -95,7 +125,7 @@ export default class AppManager {
         await this.saveInstalledGame(uid, game, installPath);
     }
 
-    async uninstallGame(uid) {
+    async uninstall(uid) {
         const installedGames = await this.getInstalledGames();
         if (!installedGames[uid]) throw new Error("Game not installed");
         await fs.rm(installedGames[uid].installPath, {
@@ -125,7 +155,7 @@ export default class AppManager {
         return computedHash === game.repo.hash;
     }
 
-    async launchGame(uid, authToken) {
+    async launch(uid, authToken) {
         const installedGames = await this.getInstalledGames();
         if (!installedGames[uid]) throw new Error("Game not installed");
         const binaryPath = path.join(

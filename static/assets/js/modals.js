@@ -39,7 +39,7 @@ class LuxModal {
 
     render() {
         this.modal = document.createElement("div");
-        this.modal.className = `fixed inset-0 bg-black/40 backdrop-blur flex items-center justify-center z-50`;
+        this.modal.className = `fixed inset-0 bg-black/40 backdrop-blur flex items-center justify-center z-40`;
 
         const modalContent = document.createElement("div");
         modalContent.className = `bg-alt-background-plain p-6 rounded-2xl shadow-lg ${this.width} relative border border-foreground-main/20`;

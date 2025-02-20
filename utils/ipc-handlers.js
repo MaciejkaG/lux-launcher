@@ -123,7 +123,15 @@ export default (mainWindow) => {
 
     // App library
     ipcMain.handle("get-library", async () => {
-        return apps.listGames();
+        const token = await requireToken();
+
+        return await apps.listApps(token);
+    });
+
+    ipcMain.handle("get-app", async (event, appId) => {
+        const token = await requireToken();
+
+        return await apps.fetchGameDetails(appId, token);
     });
 
     // WebSocket events handling

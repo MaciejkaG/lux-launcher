@@ -15,11 +15,14 @@ contextBridge.exposeInMainWorld("electron", {
         list: async () => await ipcRenderer.invoke("get-friendslist"),
         statuses: async () => await ipcRenderer.invoke("get-friends-presence"),
 
-        add: async (username) => await ipcRenderer.invoke("add-friend", username),
-        remove: async (publicId) => await ipcRenderer.invoke("remove-friend", publicId),
+        add: async (username) =>
+            await ipcRenderer.invoke("add-friend", username),
+        remove: async (publicId) =>
+            await ipcRenderer.invoke("remove-friend", publicId),
     },
 
     apps: {
         list: async () => await ipcRenderer.invoke("get-library"),
+        details: async (appId) => await ipcRenderer.invoke("get-app", appId),
     },
 });

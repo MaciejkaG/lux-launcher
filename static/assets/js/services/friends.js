@@ -83,23 +83,23 @@ class FriendsUI {
 
 // Friends Management
 class FriendsManager {
-    static async sendFriendRequest(nickname) {
+    static async sendFriendRequest(username) {
         try {
-            await window.electron.friends.add(nickname);
+            await window.electron.friends.add(username);
         } catch (err) {
             const errorMessage = err.message.slice(61);
             switch (errorMessage) {
                 case "409 Conflict":
                     new LuxToast({
                         title: "An error occured",
-                        content: `You and ${nickname} are already friends!`,
+                        content: `You and ${username} are already friends!`,
                     });
                     break;
 
                 case "404 Not Found":
                     new LuxToast({
                         title: "An error occured",
-                        content: `Player ${nickname} not found`,
+                        content: `Player ${username} not found`,
                     });
                     break;
 
@@ -116,7 +116,7 @@ class FriendsManager {
 
             return;
         }
-        FriendsUI.showNotification(`Friend request sent to ${nickname}`);
+        FriendsUI.showNotification(`Friend request sent to ${username}`);
         await this.refreshFriendsList();
     }
 
@@ -232,6 +232,7 @@ class FriendsManager {
 
     static updateFriendRequestsModal() {
         if (!window.friendRequestsModal) return;
+        console.log("updating friend requests");
 
         let friendRequestsHTML =
             '<div class="flex flex-col gap-2 h-64 overflow-scroll [&::-webkit-scrollbar]:hidden">';
