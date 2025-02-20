@@ -124,19 +124,6 @@ export default class GameManager {
         return gameProcess;
     }
 
-    setupIPC(uid, authToken) {
-        const ipcPath = path.join(this.installDir, `${uid}.sock`);
-        const server = new Server((socket) => {
-            console.log(`Game ${uid} connected to IPC`);
-            socket.write(JSON.stringify({ authToken }));
-            socket.end();
-        });
-        server.listen(ipcPath, () =>
-            console.log(`IPC server running for ${uid}`)
-        );
-        this.ipcServers.set(uid, server);
-    }
-
     async getInstalledGames() {
         try {
             const data = await fs.readFile(this.installedGamesFile, "utf-8");
