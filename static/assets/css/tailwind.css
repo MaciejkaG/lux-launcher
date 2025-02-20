@@ -680,6 +680,9 @@
   .w-sm {
     width: var(--container-sm);
   }
+  .w-xl {
+    width: var(--container-xl);
+  }
   .w-xs {
     width: var(--container-xs);
   }

@@ -6,9 +6,11 @@ import { pipeline } from "node:stream/promises";
 import fetch from "node-fetch";
 import unzipper from "unzipper";
 import { spawn } from "node:child_process";
-import { Server } from "node:net";
+import { platform, arch } from 'node:os';
 
 import AppIPCServer from "./app-ipc-server";
+
+const platformString = `${platform()}-${arch()}`;
 
 const AppIPC = new AppIPCServer()
 
@@ -45,6 +47,12 @@ export default class GameManager {
         const gamePath = path.join(installPath, uid);
         await fs.mkdir(gamePath, { recursive: true });
         const zipPath = path.join(gamePath, "game.zip");
+
+        const archiveUrl = game.archives[platformString];
+
+        if (!archiveUrl) {
+            throw new Error("Platform unsupported");
+        }
 
         console.log(`Downloading ${game.repo.url}...`);
         const response = await fetch(game.repo.url);
