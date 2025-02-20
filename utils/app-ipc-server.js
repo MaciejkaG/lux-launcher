@@ -1,8 +1,8 @@
 import { WebSocketServer } from "ws";
-import { EventListener } from "eventsource3";
+import EventEmitter from "eventemitter3";
 import { randomInt } from "node:crypto";
 
-export default class AppIPCServer extends EventListener {
+export default class AppIPCServer extends EventEmitter {
     constructor() {
         if (AppIPCServer.instance) return AppIPCServer.instance;
 

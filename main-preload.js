@@ -18,4 +18,8 @@ contextBridge.exposeInMainWorld("electron", {
         add: async (username) => await ipcRenderer.invoke("add-friend", username),
         remove: async (publicId) => await ipcRenderer.invoke("remove-friend", publicId),
     },
+
+    apps: {
+        list: async () => await ipcRenderer.invoke("get-library"),
+    },
 });

@@ -3,6 +3,7 @@ import { ipcMain, BrowserWindow, dialog } from "electron";
 import TMan from "./tman.js";
 
 import APIClient from "./api-client.js";
+import AppManager from "./app-manager.js";
 import WebSocketClient from "./event-listener.js";
 
 const api = new APIClient({
@@ -11,6 +12,8 @@ const api = new APIClient({
 
 const wsc = new WebSocketClient();
 wsc.setPresence("lux");
+
+const apps = new AppManager(process.env.API_URL, "/home/maciej/Desktop/lux-games");
 
 export default (mainWindow) => {
     ipcMain.handle("start-auth", async () => {
@@ -116,6 +119,11 @@ export default (mainWindow) => {
         const token = await requireToken();
 
         return await api.removeFriend(token, pubId);
+    });
+
+    // App library
+    ipcMain.handle("get-library", async () => {
+        return apps.listGames();
     });
 
     // WebSocket events handling

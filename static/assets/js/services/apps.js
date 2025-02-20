@@ -34,3 +34,8 @@ function appDetails(installed) {
               ],
     });
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const games = await window.electron.apps.list();
+    console.log(games);
+});

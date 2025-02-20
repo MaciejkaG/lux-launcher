@@ -8,13 +8,13 @@ import unzipper from "unzipper";
 import { spawn } from "node:child_process";
 import { platform, arch } from 'node:os';
 
-import AppIPCServer from "./app-ipc-server";
+import AppIPCServer from "./app-ipc-server.js";
 
 const platformString = `${platform()}-${arch()}`;
 
-const AppIPC = new AppIPCServer()
+const AppIPC = new AppIPCServer();
 
-export default class GameManager {
+export default class AppManager {
     constructor(libraryApiUrl, installDir) {
         this.libraryApiUrl = libraryApiUrl;
         this.installDir = installDir;
@@ -28,7 +28,8 @@ export default class GameManager {
     async fetchGameLibrary() {
         const response = await fetch(`${this.libraryApiUrl}/api/apps`);
         if (!response.ok) throw new Error("Failed to fetch game library");
-        return response.json();
+        const responseJSON = await response.json();
+        return responseJSON;
     }
 
     async fetchGameDetails(uid) {
@@ -36,6 +37,17 @@ export default class GameManager {
         if (!response.ok)
             throw new Error(`Failed to fetch details for game ${uid}`);
         return response.json();
+    }
+
+    async listGames() {
+        const library = await this.fetchGameLibrary();
+        const installedGames = await this.getInstalledGames();
+
+        return library.map((game) => ({
+            name: game.name,
+            appid: game.uid,
+            isInstalled: !!installedGames[game.uid],
+        }));
     }
 
     async installGame(
@@ -48,14 +60,14 @@ export default class GameManager {
         await fs.mkdir(gamePath, { recursive: true });
         const zipPath = path.join(gamePath, "game.zip");
 
-        const archiveUrl = game.archives[platformString];
+        const archive = game.archives[platformString];
 
-        if (!archiveUrl) {
+        if (!archive) {
             throw new Error("Platform unsupported");
         }
 
-        console.log(`Downloading ${game.repo.url}...`);
-        const response = await fetch(game.repo.url);
+        console.log(`Downloading ${archive.url}...`);
+        const response = await fetch(archive.url);
         if (!response.ok) throw new Error("Failed to download game files");
         const totalSize = response.headers.get("content-length");
         let downloadedSize = 0;
@@ -69,7 +81,7 @@ export default class GameManager {
 
         console.log("Verifying file integrity...");
         const fileHash = await this.computeFileHash(zipPath);
-        if (fileHash !== game.repo.hash)
+        if (fileHash !== archive.hash)
             throw new Error("Downloaded file hash mismatch!");
 
         console.log("Extracting game files...");
@@ -99,7 +111,7 @@ export default class GameManager {
         const game = await this.fetchGameDetails(uid);
         const installedGames = await this.getInstalledGames();
         if (!installedGames[uid]) throw new Error("Game not installed");
-        return game.repo.tag !== installedGames[uid].version;
+        return game.latest_tag !== installedGames[uid].version;
     }
 
     async verifyGameFiles(uid) {
