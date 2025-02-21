@@ -25,8 +25,8 @@ async function appDetails(appId) {
                       class: "bg-red-600/60 text-white",
                       action: async function () {
                           try {
-                              uninstallApp(appId);
                               this.close();
+                              uninstallApp(appId);
                           } catch (error) {
                               console.error("Failed to uninstall app:", error);
                               // You might want to show an error message to the user
@@ -62,10 +62,11 @@ async function appDetails(appId) {
 
 async function updateAppsList() {
     const appsList = document.getElementById("apps-list");
-    appsList.innerHTML = "";
-    let appsHTML = "";
-
+    
     const apps = await window.electron.apps.list();
+    appsList.innerHTML = "";
+
+    let appsHTML = "";
     apps.forEach((app) => {
         appsState.set(app.appId, app);
         appsHTML += `
@@ -108,7 +109,7 @@ async function installApp(appId) {
 
         new LuxToast({
             title: "Installation successfull!",
-            content: `Finished installing ${app.name}`,
+            content: `Finished installing ${app.name} (${app.details.latest_tag})`,
         });
     } catch (error) {
         console.error("Failed to install app:", error);

@@ -103,7 +103,7 @@ class LuxToast {
             const toastInstance = Array.from(LuxToast.activeToasts).find(
                 (t) => t.toast === currentToasts[i]
             );
-            initialBottom += (toastInstance.baseHeight ?? 0) + LuxToast.gap;
+            initialBottom += (toastInstance?.baseHeight ?? 0) + LuxToast.gap;
         }
 
         this.toast.style.bottom = `${initialBottom}px`;
