@@ -28,7 +28,7 @@ switch (platform()) {
 
     default:
         throw new Error(
-            "Unsupported platform detected. Couldn't initialise the Game Library Manager."
+            "Unsupported platform detected. Couldn't initialise the App Library Manager."
         );
 }
 
@@ -42,160 +42,183 @@ export default class AppManager {
     constructor(libraryApiUrl) {
         this.libraryApiUrl = libraryApiUrl;
         this.installDir = baseInstallDir;
-        this.installedGamesFile = path.join(
+        this.installedAppsFile = path.join(
             this.installDir,
-            "installed_games.json"
+            "installed_apps.json"
         );
         this.ipcServers = new Map();
+        this.operationLock = null;
     }
 
-    async fetchGameLibrary() {
+    // Helper method to manage operation locks
+    async withOperationLock(operationType, appId, operation) {
+        if (this.operationLock) {
+            throw new Error(`Another operation (${this.operationLock.type}) is in progress for app ${this.operationLock.appId}`);
+        }
+
+        this.operationLock = { type: operationType, appId };
+        try {
+            const result = await operation();
+            return result;
+        } finally {
+            this.operationLock = null;
+        }
+    }
+
+    async fetchAppLibrary() {
         const response = await fetch(`${this.libraryApiUrl}/apps`, {
             method: "GET"
         });
-        if (!response.ok) throw new Error("Failed to fetch game library");
+        if (!response.ok) throw new Error("Failed to fetch app library");
         const responseJSON = await response.json();
         return responseJSON;
     }
 
-    async fetchGameDetails(appId) {
+    async fetchAppDetails(appId) {
         const response = await fetch(`${this.libraryApiUrl}/apps/${appId}`, {
             method: "GET"
         });
         if (!response.ok)
-            throw new Error(`Failed to fetch details for game ${appId}`);
+            throw new Error(`Failed to fetch details for app ${appId}`);
         return response.json();
     }
 
     async listApps(authToken) {
-        const library = await this.fetchGameLibrary(authToken);
-        const installedGames = await this.getInstalledGames();
+        const library = await this.fetchAppLibrary(authToken);
+        const installedApps = await this.getInstalledApps();
 
-        return library.map((game) => ({
-            name: game.display_name,
-            appId: game.app_id,
-            isInstalled: !!installedGames[game.uid],
+        return library.map((app) => ({
+            name: app.display_name,
+            appId: app.app_id,
+            isInstalled: Object.keys(installedApps).includes(app.app_id),
         }));
     }
 
-    async install(
-        appId,
-        onProgress = () => {}
-    ) {
-        const game = await this.fetchGameDetails(appId);
-        const gamePath = path.join(this.installDir, appId);
-        await fs.mkdir(gamePath, { recursive: true });
-        const zipPath = path.join(gamePath, "game.zip");
+    async install(appId, onProgress = () => {}) {
+        return this.withOperationLock('install', appId, async () => {
+            const app = await this.fetchAppDetails(appId);
+            const appPath = path.join(this.installDir, appId);
+            await fs.mkdir(appPath, { recursive: true });
+            const zipPath = path.join(appPath, "app.zip");
 
-        const archive = game.archives[platformString];
+            const archive = app.archives[platformString];
 
-        if (!archive) {
-            throw new Error("Platform unsupported");
-        }
+            if (!archive) {
+                throw new Error("Platform unsupported");
+            }
 
-        console.log(`Downloading ${archive.url}...`);
-        const response = await fetch(archive.url);
-        if (!response.ok) throw new Error("Failed to download game files");
-        const totalSize = response.headers.get("content-length");
-        let downloadedSize = 0;
+            console.log(`Downloading ${archive.url}...`);
+            const response = await fetch(archive.url);
+            if (!response.ok) throw new Error("Failed to download app files");
+            const totalSize = response.headers.get("content-length");
+            let downloadedSize = 0;
 
-        const fileStream = createWriteStream(zipPath);
-        response.body.on("data", (chunk) => {
-            downloadedSize += chunk.length;
-            onProgress((downloadedSize / totalSize) * 100);
+            const fileStream = createWriteStream(zipPath);
+            response.body.on("data", (chunk) => {
+                downloadedSize += chunk.length;
+                onProgress((downloadedSize / totalSize) * 100);
+            });
+            await pipeline(response.body, fileStream);
+
+            console.log("Verifying file integrity...");
+            const fileHash = await this.computeFileHash(zipPath);
+            if (fileHash !== archive.hash)
+                throw new Error("Downloaded file hash mismatch!");
+
+            console.log("Extracting app files...");
+            await 
+                createReadStream(zipPath)
+                .pipe(unzipper.Extract({ path: appPath }))
+                .promise();
+            await fs.unlink(zipPath);
+
+            console.log(`Installed ${app.display_name} successfully.`);
+            await this.saveInstalledApp(appId, app);
         });
-        await pipeline(response.body, fileStream);
-
-        console.log("Verifying file integrity...");
-        const fileHash = await this.computeFileHash(zipPath);
-        if (fileHash !== archive.hash)
-            throw new Error("Downloaded file hash mismatch!");
-
-        console.log("Extracting game files...");
-        await 
-            createReadStream(zipPath)
-            .pipe(unzipper.Extract({ path: gamePath }))
-            .promise();
-        await fs.unlink(zipPath);
-
-        console.log(`Installed ${game.display_name} successfully.`);
-        await this.saveInstalledGame(appId, game);
     }
 
     async uninstall(appId) {
-        const installedGames = await this.getInstalledGames();
-        if (!installedGames[appId]) throw new Error("Game not installed");
-        await fs.rm(installedGames[appId].installPath, {
-            recursive: true,
-            force: true,
+        return this.withOperationLock('uninstall', appId, async () => {
+            const installedApps = await this.getInstalledApps();
+            if (!installedApps[appId]) throw new Error("App not installed");
+            await fs.rm(installedApps[appId].installPath, {
+                recursive: true,
+                force: true,
+            });
+            delete installedApps[appId];
+            await this.saveInstalledApps(installedApps);
+            console.log(`Uninstalled ${appId}`);
         });
-        delete installedGames[appId];
-        await this.saveInstalledGames(installedGames);
-        console.log(`Uninstalled ${appId}`);
     }
 
     async checkForUpdates(appId) {
-        const game = await this.fetchGameDetails(appId);
-        const installedGames = await this.getInstalledGames();
-        if (!installedGames[appId]) throw new Error("Game not installed");
-        return game.latest_tag !== installedGames[appId].version;
+        return this.withOperationLock('checkForUpdates', appId, async () => {
+            const app = await this.fetchAppDetails(appId);
+            const installedApps = await this.getInstalledApps();
+            if (!installedApps[appId]) throw new Error("App not installed");
+            return app.latest_tag !== installedApps[appId].version;
+        });
     }
 
-    async verifyGameFiles(appId) {
-        const installedGames = await this.getInstalledGames();
-        if (!installedGames[appId]) throw new Error("Game not installed");
-        const game = await this.fetchGameDetails(appId);
-        const gamePath = installedGames[appId].installPath;
+    async verifyAppFiles(appId) {
+        return this.withOperationLock('verify', appId, async () => {
+            const installedApps = await this.getInstalledApps();
+            if (!installedApps[appId]) throw new Error("App not installed");
+            const app = await this.fetchAppDetails(appId);
+            const appPath = installedApps[appId].installPath;
 
-        console.log("Verifying game files...");
-        const computedHash = await this.computeDirectoryHash(gamePath);
-        return computedHash === game.archives[platformString];
+            console.log("Verifying app files...");
+            const computedHash = await this.computeDirectoryHash(appPath);
+            return computedHash === app.archives[platformString];
+        });
     }
 
     async launch(appId, authToken) {
-        const installedGames = await this.getInstalledGames();
-        if (!installedGames[appId]) throw new Error("Game not installed");
-        const binaryPath = path.join(
-            installedGames[appId].installPath,
-            installedGames[appId].binaryPath
-        );
-        console.log(`Launching game: ${binaryPath}`);
+        return this.withOperationLock('launch', appId, async () => {
+            const installedApps = await this.getInstalledApps();
+            if (!installedApps[appId]) throw new Error("App not installed");
+            const binaryPath = path.join(
+                installedApps[appId].installPath,
+                installedApps[appId].binaryPath
+            );
+            console.log(`Launching app: ${binaryPath}`);
 
-        const gameProcess = spawn(binaryPath, {
-            detached: true,
-            stdio: "ignore",
+            const appProcess = spawn(binaryPath, {
+                detached: true,
+                stdio: "ignore",
+            });
+            appProcess.unref();
+
+            this.setupIPC(appId, authToken);
+            return appProcess;
         });
-        gameProcess.unref();
-
-        this.setupIPC(appId, authToken);
-        return gameProcess;
     }
 
-    async getInstalledGames() {
+    async getInstalledApps() {
         try {
-            const data = await fs.readFile(this.installedGamesFile, "utf-8");
+            const data = await fs.readFile(this.installedAppsFile, "utf-8");
             return JSON.parse(data);
         } catch {
             return {};
         }
     }
 
-    async saveInstalledGame(appId, game) {
+    async saveInstalledApp(appId, app) {
         const installPath = path.join(this.installDir, appId);
-        const installedGames = await this.getInstalledGames();
-        installedGames[appId] = {
-            name: game.name,
-            version: game.latest_tag,
+        const installedApps = await this.getInstalledApps();
+        installedApps[appId] = {
+            name: app.name,
+            version: app.latest_tag,
             installPath,
-            binaryPath: game.binaryPath,
+            binaryPath: app.binaryPath,
         };
-        await this.saveInstalledGames(installedGames);
+        await this.saveInstalledApps(installedApps);
     }
 
-    async saveInstalledGames(installedGames) {
+    async saveInstalledApps(installedApps) {
         await fs.writeFile(
-            this.installedGamesFile,
-            JSON.stringify(installedGames, null, 2)
+            this.installedAppsFile,
+            JSON.stringify(installedApps, null, 2)
         );
     }
 

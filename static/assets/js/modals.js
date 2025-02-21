@@ -43,7 +43,6 @@ class LuxModal {
 
         const modalContent = document.createElement("div");
         modalContent.className = `bg-alt-background-plain p-6 rounded-2xl shadow-lg ${this.width} relative border border-foreground-main/20`;
-        console.log(modalContent.className);
         this.modalContent = modalContent;
 
         if (this.dismissible) {
@@ -94,7 +93,6 @@ class LuxModal {
             duration: 150,
             easing: "easeOutQuad",
         });
-        console.log(this.modalContent);
         anime({
             targets: this.modalContent,
             scale: [0.75, 1],

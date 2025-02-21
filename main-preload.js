@@ -31,5 +31,14 @@ contextBridge.exposeInMainWorld("electron", {
             });
             return await ipcRenderer.invoke("install-app", appId);
         },
+        uninstall: async (appId) => {
+            return await ipcRenderer.invoke("uninstall-app", appId);
+        },
+        launch: async (appId) => {
+            return await ipcRenderer.invoke("launch-app", appId);
+        },
+        verify: async (appId) => {
+            return await ipcRenderer.invoke("verify-app", appId);
+        },
     },
 });

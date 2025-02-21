@@ -3,13 +3,14 @@ class LuxToast {
     static activeToasts = new Set();
     static gap = 8;
 
-    constructor({ title, content = "", buttons = [], duration = 5000 }) {
+    constructor({ indefinite = false, title, content = "", buttons = [], duration = 5000 }) {
         this.title = title;
         this.content = content;
         this.buttons = buttons;
         this.duration = duration;
         this.isExpanded = false;
         this.baseHeight = 0;
+        this.isIndefinite = indefinite;
         this.createToast();
         this.measureHeights();
         this.animateIn();
@@ -63,19 +64,21 @@ class LuxToast {
 
         const progressBar = document.createElement("div");
         progressBar.className =
-            "absolute bottom-0 left-0 h-1 bg-foreground-accent w-full";
+            "absolute bottom-0 left-0 h-1 bg-foreground-accent w-full" + (this.isIndefinite ? "transition-all duration-100 ease-out67" : "");
         this.progressBar = progressBar;
         this.toast.appendChild(progressBar);
 
-        this.toast.addEventListener("mouseenter", () => {
-            this.pauseTimer();
-            this.rearrangeToasts(); // Rearrange when expanding
-        });
+        if (!this.isIndefinite) {
+            this.toast.addEventListener("mouseenter", () => {
+                this.pauseTimer();
+                this.rearrangeToasts(); // Rearrange when expanding
+            });
 
-        this.toast.addEventListener("mouseleave", () => {
-            this.resumeTimer();
-            this.rearrangeToasts(); // Rearrange when collapsing
-        });
+            this.toast.addEventListener("mouseleave", () => {
+                this.resumeTimer();
+                this.rearrangeToasts(); // Rearrange when collapsing
+            });
+        }
 
         LuxToast.container.appendChild(this.toast);
 
@@ -114,9 +117,19 @@ class LuxToast {
             duration: 300,
             easing: "easeOutQuad",
             complete: () => {
-                this.startTimer();
+                if (!this.isIndefinite) {
+                    this.startTimer();
+                }
             },
         });
+    }
+
+    set progress(percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new Error("Incorrect progress value");
+        }
+
+        this.progressBar.style.width = `${percentage}%`;
     }
 
     startTimer() {

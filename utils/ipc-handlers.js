@@ -127,13 +127,25 @@ export default (mainWindow) => {
     });
 
     ipcMain.handle("get-app", async (event, appId) => {
-        return await apps.fetchGameDetails(appId);
+        return await apps.fetchAppDetails(appId);
     });
 
     ipcMain.handle("install-app", async (event, appId) => {
         return await apps.install(appId, (progress) => {
             event.sender.send(`install-progress-${appId}`, progress);
         });
+    });
+
+    ipcMain.handle("uninstall-app", async (event, appId) => {
+        return await apps.uninstall(appId);
+    });
+
+    ipcMain.handle("launch-app", async (event, appId) => {
+        return await apps.launch(appId);
+    });
+
+    ipcMain.handle("verify-app", async (event, appId) => {
+        return await apps.verifyFiles(appId);
     });
 
     // WebSocket events handling
