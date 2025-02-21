@@ -94,7 +94,7 @@ async function installApp(appId) {
     try {
         const installing = new LuxToast({
             indefinite: true,
-            title: `Installing ${app.name}`,
+            title: `Downloading ${app.name}`,
             content: "This might take a while...",
         });
         await window.electron.apps.install(appId, (progress) => {
