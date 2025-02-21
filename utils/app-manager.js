@@ -7,8 +7,8 @@ import { pipeline } from "node:stream/promises";
 import fetch from "node-fetch";
 import unzipper from "unzipper";
 import { spawn } from "node:child_process";
-import { platform, arch } from 'node:os';
-import { app } from 'electron';
+import { platform, arch } from "node:os";
+import { app } from "electron";
 
 import packageJson from "../package.json" with { type: "json" };
 
@@ -19,11 +19,28 @@ const platformString = `${platform()}-${arch()}`;
 let baseInstallDir;
 switch (platform()) {
     case "win32":
-        baseInstallDir = path.join("C:", "Program Files", packageJson.name);
+        baseInstallDir = path.join(
+            process.env.LOCALAPPDATA,
+            packageJson.name,
+            "luxapps"
+        );
         break;
 
     case "darwin":
-        baseInstallDir = path.join(app.getPath("home"), "Library/Application Support", packageJson.name, "apps");
+        baseInstallDir = path.join(
+            app.getPath("home"),
+            "Library/Application Support",
+            packageJson.name,
+            "luxapps"
+        );
+        break;
+
+    case "linux":
+        baseInstallDir = path.join(
+            process.env.HOME,
+            "." + packageJson.name,
+            "luxapps"
+        );
         break;
 
     default:
@@ -46,14 +63,15 @@ export default class AppManager {
             this.installDir,
             "installed_apps.json"
         );
-        this.ipcServers = new Map();
         this.operationLock = null;
     }
 
     // Helper method to manage operation locks
     async withOperationLock(operationType, appId, operation) {
         if (this.operationLock) {
-            throw new Error(`Another operation (${this.operationLock.type}) is in progress for app ${this.operationLock.appId}`);
+            throw new Error(
+                `Another operation (${this.operationLock.type}) is in progress for app ${this.operationLock.appId}`
+            );
         }
 
         this.operationLock = { type: operationType, appId };
@@ -67,7 +85,7 @@ export default class AppManager {
 
     async fetchAppLibrary() {
         const response = await fetch(`${this.libraryApiUrl}/apps`, {
-            method: "GET"
+            method: "GET",
         });
         if (!response.ok) throw new Error("Failed to fetch app library");
         const responseJSON = await response.json();
@@ -76,7 +94,7 @@ export default class AppManager {
 
     async fetchAppDetails(appId) {
         const response = await fetch(`${this.libraryApiUrl}/apps/${appId}`, {
-            method: "GET"
+            method: "GET",
         });
         if (!response.ok)
             throw new Error(`Failed to fetch details for app ${appId}`);
@@ -95,7 +113,7 @@ export default class AppManager {
     }
 
     async install(appId, onProgress = () => {}) {
-        return this.withOperationLock('install', appId, async () => {
+        return this.withOperationLock("install", appId, async () => {
             const app = await this.fetchAppDetails(appId);
             const appPath = path.join(this.installDir, appId);
             await fs.mkdir(appPath, { recursive: true });
@@ -126,8 +144,7 @@ export default class AppManager {
                 throw new Error("Downloaded file hash mismatch!");
 
             console.log("Extracting app files...");
-            await 
-                createReadStream(zipPath)
+            await createReadStream(zipPath)
                 .pipe(unzipper.Extract({ path: appPath }))
                 .promise();
             await fs.unlink(zipPath);
@@ -138,7 +155,7 @@ export default class AppManager {
     }
 
     async uninstall(appId) {
-        return this.withOperationLock('uninstall', appId, async () => {
+        return this.withOperationLock("uninstall", appId, async () => {
             const installedApps = await this.getInstalledApps();
             if (!installedApps[appId]) throw new Error("App not installed");
             await fs.rm(installedApps[appId].installPath, {
@@ -152,7 +169,7 @@ export default class AppManager {
     }
 
     async checkForUpdates(appId) {
-        return this.withOperationLock('checkForUpdates', appId, async () => {
+        return this.withOperationLock("checkForUpdates", appId, async () => {
             const app = await this.fetchAppDetails(appId);
             const installedApps = await this.getInstalledApps();
             if (!installedApps[appId]) throw new Error("App not installed");
@@ -160,8 +177,8 @@ export default class AppManager {
         });
     }
 
-    async verifyAppFiles(appId) {
-        return this.withOperationLock('verify', appId, async () => {
+    async verifyFiles(appId) {
+        return this.withOperationLock("verify", appId, async () => {
             const installedApps = await this.getInstalledApps();
             if (!installedApps[appId]) throw new Error("App not installed");
             const app = await this.fetchAppDetails(appId);
@@ -174,7 +191,7 @@ export default class AppManager {
     }
 
     async launch(appId, authToken) {
-        return this.withOperationLock('launch', appId, async () => {
+        return this.withOperationLock("launch", appId, async () => {
             const installedApps = await this.getInstalledApps();
             if (!installedApps[appId]) throw new Error("App not installed");
             const binaryPath = path.join(
@@ -189,7 +206,12 @@ export default class AppManager {
             });
             appProcess.unref();
 
-            this.setupIPC(appId, authToken);
+            setupIPC(authToken);
+
+            appProcess.on("close", () => {
+                AppIPC.stop();
+            });
+
             return appProcess;
         });
     }
@@ -206,11 +228,19 @@ export default class AppManager {
     async saveInstalledApp(appId, app) {
         const installPath = path.join(this.installDir, appId);
         const installedApps = await this.getInstalledApps();
+
+        const archive = app.archives[platformString];
+        if (!archive) {
+            throw new Error(
+                "Couldn't save installed app data, platform unsupported"
+            );
+        }
+
         installedApps[appId] = {
             name: app.name,
             version: app.latest_tag,
             installPath,
-            binaryPath: app.binaryPath,
+            binaryPath: archive.binaryPath,
         };
         await this.saveInstalledApps(installedApps);
     }
@@ -240,4 +270,11 @@ export default class AppManager {
         }
         return hash.digest("hex");
     }
+}
+
+function setupIPC(authToken) {
+    AppIPC.start();
+    AppIPC.on("message:token", () => {
+        AppIPC.send("token", { token: authToken });
+    });
 }

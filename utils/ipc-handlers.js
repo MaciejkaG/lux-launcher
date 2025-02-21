@@ -141,7 +141,10 @@ export default (mainWindow) => {
     });
 
     ipcMain.handle("launch-app", async (event, appId) => {
-        return await apps.launch(appId);
+        const token = await requireToken();
+
+        await apps.launch(appId, token);
+        return;
     });
 
     ipcMain.handle("verify-app", async (event, appId) => {

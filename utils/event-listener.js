@@ -84,12 +84,10 @@ export default class WebSocketClient extends EventEmitter {
     }
 
     handleMessage(message) {
-        console.log(message);
         switch (message?.event) {
             case "listening":
                 // Send all pending messages
                 this.messageQueue.forEach((message) => {
-                    console.log(message);
                     this.ws.send(message);
                 });
                 this.messageQueue.length = 0;

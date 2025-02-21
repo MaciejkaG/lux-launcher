@@ -1,6 +1,7 @@
 import { WebSocketServer } from "ws";
 import EventEmitter from "eventemitter3";
-import { randomInt } from "node:crypto";
+
+const port = 33472; // The official Lux API port
 
 export default class AppIPCServer extends EventEmitter {
     constructor() {
@@ -11,27 +12,25 @@ export default class AppIPCServer extends EventEmitter {
 
         this.server = null;
         this.client = null;
-        this.port = null;
     }
 
     async start() {
         if (this.server) {
             console.warn("[WS] Server is already running");
-            return this.port;
+            return port;
         }
 
         return new Promise((resolve, reject) => {
-            this.port = randomInt(30000, 40000); // Generate a new port each time
             this.server = new WebSocketServer({
                 host: "127.0.0.1",
-                port: this.port,
+                port: port,
             });
 
             this.server.on("listening", () => {
                 console.log(
-                    `[WS] Server started on ws://127.0.0.1:${this.port}`
+                    `[WS] Server started on ws://127.0.0.1:${port}`
                 );
-                resolve(this.port);
+                resolve(port);
             });
 
             this.server.on("connection", (ws, req) => {
@@ -90,10 +89,10 @@ export default class AppIPCServer extends EventEmitter {
     stop() {
         if (this.server) {
             console.log("[WS] Server shutting down");
+            this.removeAllListeners();
             this.server.close();
             this.server = null;
             this.client = null;
-            this.port = null;
         }
     }
 }
