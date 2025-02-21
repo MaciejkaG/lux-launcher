@@ -16,7 +16,7 @@ async function appDetails(appId) {
         title: app.name,
         content: `
             <p>${app.details.description}</p>
-            <p class="mt-6 text-xs">Latest version tag: ${app.details.latest_tag}<br>Supported platforms: ${supportedPlatforms}, darwin-arm64<br>App ID: ${app.appId}</p>
+            <p class="mt-6 text-xs">Latest version tag: ${app.details.latest_tag}<br>Supported platforms: ${supportedPlatforms}<br>App ID: ${app.appId}</p>
             `,
         buttons: app.installed
             ? [

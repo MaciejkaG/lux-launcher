@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { createWriteStream } from "node:fs";
@@ -7,6 +8,9 @@ import fetch from "node-fetch";
 import unzipper from "unzipper";
 import { spawn } from "node:child_process";
 import { platform, arch } from 'node:os';
+import { app } from 'electron';
+
+import packageJson from "../package.json" with { type: "json" };
 
 import AppIPCServer from "./app-ipc-server.js";
 
@@ -15,11 +19,11 @@ const platformString = `${platform()}-${arch()}`;
 let baseInstallDir;
 switch (platform()) {
     case "win32":
-        baseInstallDir = path.join("C:", "Program Files", "Lux");
+        baseInstallDir = path.join("C:", "Program Files", packageJson.name);
         break;
 
     case "darwin":
-        baseInstallDir = "~/Library/Application Support/Steam";
+        baseInstallDir = path.join(app.getPath("home"), "Library/Application Support", packageJson.name, "apps");
         break;
 
     default:
@@ -45,27 +49,21 @@ export default class AppManager {
         this.ipcServers = new Map();
     }
 
-    async fetchGameLibrary(authToken) {
+    async fetchGameLibrary() {
         const response = await fetch(`${this.libraryApiUrl}/apps`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${authToken}`,
-            },
+            method: "GET"
         });
         if (!response.ok) throw new Error("Failed to fetch game library");
         const responseJSON = await response.json();
         return responseJSON;
     }
 
-    async fetchGameDetails(uid, authToken) {
-        const response = await fetch(`${this.libraryApiUrl}/apps/${uid}`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${authToken}`,
-            },
+    async fetchGameDetails(appId) {
+        const response = await fetch(`${this.libraryApiUrl}/apps/${appId}`, {
+            method: "GET"
         });
         if (!response.ok)
-            throw new Error(`Failed to fetch details for game ${uid}`);
+            throw new Error(`Failed to fetch details for game ${appId}`);
         return response.json();
     }
 
@@ -81,12 +79,11 @@ export default class AppManager {
     }
 
     async install(
-        uid,
-        installPath = this.installDir,
+        appId,
         onProgress = () => {}
     ) {
-        const game = await this.fetchGameDetails(uid);
-        const gamePath = path.join(installPath, uid);
+        const game = await this.fetchGameDetails(appId);
+        const gamePath = path.join(this.installDir, appId);
         await fs.mkdir(gamePath, { recursive: true });
         const zipPath = path.join(gamePath, "game.zip");
 
@@ -115,52 +112,52 @@ export default class AppManager {
             throw new Error("Downloaded file hash mismatch!");
 
         console.log("Extracting game files...");
-        await fs
-            .createReadStream(zipPath)
+        await 
+            createReadStream(zipPath)
             .pipe(unzipper.Extract({ path: gamePath }))
             .promise();
         await fs.unlink(zipPath);
 
-        console.log(`Installed ${game.name} successfully.`);
-        await this.saveInstalledGame(uid, game, installPath);
+        console.log(`Installed ${game.display_name} successfully.`);
+        await this.saveInstalledGame(appId, game);
     }
 
-    async uninstall(uid) {
+    async uninstall(appId) {
         const installedGames = await this.getInstalledGames();
-        if (!installedGames[uid]) throw new Error("Game not installed");
-        await fs.rm(installedGames[uid].installPath, {
+        if (!installedGames[appId]) throw new Error("Game not installed");
+        await fs.rm(installedGames[appId].installPath, {
             recursive: true,
             force: true,
         });
-        delete installedGames[uid];
+        delete installedGames[appId];
         await this.saveInstalledGames(installedGames);
-        console.log(`Uninstalled ${uid}`);
+        console.log(`Uninstalled ${appId}`);
     }
 
-    async checkForUpdates(uid) {
-        const game = await this.fetchGameDetails(uid);
+    async checkForUpdates(appId) {
+        const game = await this.fetchGameDetails(appId);
         const installedGames = await this.getInstalledGames();
-        if (!installedGames[uid]) throw new Error("Game not installed");
-        return game.latest_tag !== installedGames[uid].version;
+        if (!installedGames[appId]) throw new Error("Game not installed");
+        return game.latest_tag !== installedGames[appId].version;
     }
 
-    async verifyGameFiles(uid) {
+    async verifyGameFiles(appId) {
         const installedGames = await this.getInstalledGames();
-        if (!installedGames[uid]) throw new Error("Game not installed");
-        const game = await this.fetchGameDetails(uid);
-        const gamePath = installedGames[uid].installPath;
+        if (!installedGames[appId]) throw new Error("Game not installed");
+        const game = await this.fetchGameDetails(appId);
+        const gamePath = installedGames[appId].installPath;
 
         console.log("Verifying game files...");
         const computedHash = await this.computeDirectoryHash(gamePath);
-        return computedHash === game.repo.hash;
+        return computedHash === game.archives[platformString];
     }
 
-    async launch(uid, authToken) {
+    async launch(appId, authToken) {
         const installedGames = await this.getInstalledGames();
-        if (!installedGames[uid]) throw new Error("Game not installed");
+        if (!installedGames[appId]) throw new Error("Game not installed");
         const binaryPath = path.join(
-            installedGames[uid].installPath,
-            installedGames[uid].binaryPath
+            installedGames[appId].installPath,
+            installedGames[appId].binaryPath
         );
         console.log(`Launching game: ${binaryPath}`);
 
@@ -170,7 +167,7 @@ export default class AppManager {
         });
         gameProcess.unref();
 
-        this.setupIPC(uid, authToken);
+        this.setupIPC(appId, authToken);
         return gameProcess;
     }
 
@@ -183,11 +180,12 @@ export default class AppManager {
         }
     }
 
-    async saveInstalledGame(uid, game, installPath) {
+    async saveInstalledGame(appId, game) {
+        const installPath = path.join(this.installDir, appId);
         const installedGames = await this.getInstalledGames();
-        installedGames[uid] = {
+        installedGames[appId] = {
             name: game.name,
-            version: game.repo.tag,
+            version: game.latest_tag,
             installPath,
             binaryPath: game.binaryPath,
         };
@@ -203,7 +201,7 @@ export default class AppManager {
 
     async computeFileHash(filePath) {
         const hash = crypto.createHash("sha256");
-        const stream = fs.createReadStream(filePath);
+        const stream = createReadStream(filePath);
         for await (const chunk of stream) hash.update(chunk);
         return hash.digest("hex");
     }

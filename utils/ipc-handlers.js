@@ -123,15 +123,17 @@ export default (mainWindow) => {
 
     // App library
     ipcMain.handle("get-library", async () => {
-        const token = await requireToken();
-
-        return await apps.listApps(token);
+        return await apps.listApps();
     });
 
     ipcMain.handle("get-app", async (event, appId) => {
-        const token = await requireToken();
+        return await apps.fetchGameDetails(appId);
+    });
 
-        return await apps.fetchGameDetails(appId, token);
+    ipcMain.handle("install-app", async (event, appId) => {
+        return await apps.install(appId, (progress) => {
+            event.sender.send(`install-progress-${appId}`, progress);
+        });
     });
 
     // WebSocket events handling

@@ -24,5 +24,12 @@ contextBridge.exposeInMainWorld("electron", {
     apps: {
         list: async () => await ipcRenderer.invoke("get-library"),
         details: async (appId) => await ipcRenderer.invoke("get-app", appId),
+
+        install: async (appId, onProgress) => {
+            ipcRenderer.on(`install-progress-${appId}`, (event, progress) => {
+                onProgress(progress);
+            });
+            return await ipcRenderer.invoke("install-app", appId);
+        },
     },
 });
