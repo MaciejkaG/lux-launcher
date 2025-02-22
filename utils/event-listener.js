@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { dialog } from "electron";
 import EventEmitter from "eventemitter3";
+import { generateUserAgent } from "./api-client.js";
 
 export default class WebSocketClient extends EventEmitter {
     constructor(authToken) {
@@ -23,6 +24,7 @@ export default class WebSocketClient extends EventEmitter {
         this.ws = new WebSocket(process.env.API_WEBSOCKET, {
             headers: {
                 Authorization: `Bearer ${this.authToken}`,
+                "User-Agent": generateUserAgent(),
             },
         });
 

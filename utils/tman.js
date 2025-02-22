@@ -105,6 +105,7 @@ function validateTokenData(json) {
 
 // Clear token
 async function clearToken() {
+    return;
     _currentToken = "";
     try {
         await fs.unlink(TOKEN_PATH);

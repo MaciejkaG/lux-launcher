@@ -1,4 +1,14 @@
-import fetch from "node-fetch";
+import axios from "axios";
+import os from "node:os";
+import packageJson from "../package.json" with { type: "json" };
+
+const ax = axios.create({
+    baseURL: process.env.API_URL,
+    timeout: 5000,
+    headers: {
+        "User-Agent": generateUserAgent(),
+    }
+});
 
 class ApiError extends Error {
     constructor(status, statusText) {
@@ -8,27 +18,24 @@ class ApiError extends Error {
 }
 
 export default class APIClient {
-    constructor(config) {
-        this.baseURL = config.baseURL || "";
+    constructor() {
     }
 
     async _get(path, authToken = null) {
         try {
-            const response = await fetch(this.baseURL + path, {
-                method: "GET",
+            const response = await ax.get(path, {
                 headers: {
                     "Content-Type": "application/json",
-                    ...(authToken && {
-                        Authorization: `Bearer ${authToken}`,
-                    }),
+                    ...(authToken && { Authorization: `Bearer ${authToken}` }),
                 },
             });
 
-            if (!response.ok) {
-                throw new ApiError(response.status, response.statusText);
-            }
+            console.log({
+                "Content-Type": "application/json",
+                ...(authToken && { Authorization: `Bearer ${authToken}` }),
+            });
 
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error("GET request failed:", error);
             throw error;
@@ -37,22 +44,15 @@ export default class APIClient {
 
     async _post(path, authToken = null, payload = {}) {
         try {
-            const response = await fetch(this.baseURL + path, {
-                method: "POST",
-                body: JSON.stringify(payload),
+            const response = await ax.post(this.baseURL + path, payload, {
                 headers: {
                     "Content-Type": "application/json",
-                    ...(authToken && {
-                        Authorization: `Bearer ${authToken}`,
-                    }),
+                    ...(authToken && { Authorization: `Bearer ${authToken}` }),
+                    "User-Agent": generateUserAgent(),
                 },
             });
 
-            if (!response.ok) {
-                throw new ApiError(response.status, response.statusText);
-            }
-
-            return await response.text();
+            return response.data;
         } catch (error) {
             console.error("POST request failed:", error);
             throw error;
@@ -78,4 +78,27 @@ export default class APIClient {
             friend_public_id: friendPubId,
         });
     }
+}
+
+export function generateUserAgent(appName = packageJson.name, appVersion = packageJson.version) {
+    const platform = os.platform();
+    const arch = os.arch();
+    const release = os.release();
+
+    let osInfo;
+    switch (platform) {
+        case "win32":
+            osInfo = `Windows NT ${release}`;
+            break;
+        case "darwin":
+            osInfo = `Macintosh; Intel Mac OS X ${release.replace(/\./g, "_")}`;
+            break;
+        case "linux":
+            osInfo = `X11; Linux ${arch}`;
+            break;
+        default:
+            osInfo = `${platform} ${release}`;
+    }
+
+    return `${appName}/${appVersion} (${osInfo})`;
 }

@@ -4,15 +4,24 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
-import fetch from "node-fetch";
+import axios from "axios";
 import unzipper from "unzipper";
 import { spawn } from "node:child_process";
 import { platform, arch } from "node:os";
 import { app } from "electron";
+import { generateUserAgent } from "./api-client.js";
 
 import packageJson from "../package.json" with { type: "json" };
 
 import AppIPCServer from "./app-ipc-server.js";
+
+const ax = axios.create({
+    baseURL: process.env.API_URL,
+    timeout: 5000,
+    headers: {
+        "User-Agent": generateUserAgent(),
+    }
+});
 
 const platformString = `${platform()}-${arch()}`;
 
@@ -56,8 +65,7 @@ fs.stat(baseInstallDir).catch(() => {
 const AppIPC = new AppIPCServer();
 
 export default class AppManager {
-    constructor(libraryApiUrl) {
-        this.libraryApiUrl = libraryApiUrl;
+    constructor() {
         this.installDir = baseInstallDir;
         this.installedAppsFile = path.join(
             this.installDir,
@@ -84,21 +92,33 @@ export default class AppManager {
     }
 
     async fetchAppLibrary() {
-        const response = await fetch(`${this.libraryApiUrl}/apps`, {
-            method: "GET",
-        });
-        if (!response.ok) throw new Error("Failed to fetch app library");
-        const responseJSON = await response.json();
-        return responseJSON;
+        try {
+            const response = await ax.get("/apps", {
+                headers: {
+                    "User-Agent": generateUserAgent(),
+                },
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error("Failed to fetch app library.");
+            throw error;
+        }
     }
 
     async fetchAppDetails(appId) {
-        const response = await fetch(`${this.libraryApiUrl}/apps/${appId}`, {
-            method: "GET",
-        });
-        if (!response.ok)
-            throw new Error(`Failed to fetch details for app ${appId}`);
-        return response.json();
+        try {
+            const response = await ax.get(`/apps/${appId}`, {
+                headers: {
+                    "User-Agent": generateUserAgent(),
+                },
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error(`Failed to fetch details for app ${appId}`);
+            throw error;
+        }
     }
 
     async listApps(authToken) {
@@ -126,17 +146,26 @@ export default class AppManager {
             }
 
             console.log(`Downloading ${archive.url}...`);
-            const response = await fetch(archive.url);
-            if (!response.ok) throw new Error("Failed to download app files");
-            const totalSize = response.headers.get("content-length");
+
+            const response = await axios.get(archive.url, {
+                responseType: "stream",
+            });
+
+            if (!response || response.status !== 200) {
+                throw new Error("Failed to download app files");
+            }
+
+            const totalSize = response.headers["content-length"];
             let downloadedSize = 0;
 
             const fileStream = createWriteStream(zipPath);
-            response.body.on("data", (chunk) => {
+            response.data.on("data", (chunk) => {
                 downloadedSize += chunk.length;
                 onProgress((downloadedSize / totalSize) * 100);
             });
-            await pipeline(response.body, fileStream);
+
+            await pipeline(response.data, fileStream);
+
 
             console.log("Verifying file integrity...");
             const fileHash = await this.computeFileHash(zipPath);

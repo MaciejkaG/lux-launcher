@@ -6,14 +6,12 @@ import APIClient from "./api-client.js";
 import AppManager from "./app-manager.js";
 import WebSocketClient from "./event-listener.js";
 
-const api = new APIClient({
-    baseURL: process.env.API_URL,
-});
+const api = new APIClient();
 
 const wsc = new WebSocketClient();
 wsc.setPresence("lux");
 
-const apps = new AppManager(process.env.API_URL, "/home/maciej/Desktop/lux-games");
+const apps = new AppManager();
 
 export default (mainWindow) => {
     ipcMain.handle("start-auth", async () => {
